@@ -1,543 +1,604 @@
 # 🚀 TITANPRO — Panduan Lengkap Scraping TikTok & Instagram
 
-Panduan ini menjelaskan cara menjalankan dan menggunakan dua sistem scraping yang telah dibangun untuk tim TITANPRO:
+> **Panduan ini ditulis berdasarkan hasil pengujian nyata** terhadap EnsembleData API pada 13 Juli 2026 menggunakan token tim TITANPRO.
+
+Panduan ini mencakup cara menggunakan dua sistem scraping:
 - **[TIKTOKSCRAP](https://github.com/TlTANPRO/TIKTOKSCRAP)** — Analitik akun TikTok
 - **[INSTAGRAMSCRAP](https://github.com/TlTANPRO/INSTAGRAMSCRAP)** — Analitik akun Instagram
-
-Keduanya menggunakan **[EnsembleData API](https://ensembledata.com)** sebagai penyedia data.
 
 ---
 
 ## 📋 Daftar Isi
 
-1. [Token EnsembleData](#-token-ensembledata)
-2. [Arsitektur Sistem](#-arsitektur-sistem)
-3. [Setup TIKTOKSCRAP](#-setup-tiktokscrap)
-4. [Setup INSTAGRAMSCRAP](#-setup-instagramscrap)
-5. [Cara Scraping TikTok](#-cara-scraping-tiktok)
-6. [Cara Scraping Instagram](#-cara-scraping-instagram)
-7. [API Endpoints Lengkap](#-api-endpoints-lengkap)
-8. [Rotasi Token](#-rotasi-token)
-9. [Troubleshooting](#-troubleshooting)
+1. [Hasil Pengujian API](#-hasil-pengujian-api-nyata)
+2. [Token EnsembleData & Status](#-token-ensembledata--status)
+3. [Arsitektur Sistem](#-arsitektur-sistem)
+4. [Setup TIKTOKSCRAP](#-setup-tiktokscrap)
+5. [Setup INSTAGRAMSCRAP](#-setup-instagramscrap--bug-fix)
+6. [Cara Scraping TikTok](#-cara-scraping-tiktok)
+7. [Cara Scraping Instagram](#-cara-scraping-instagram)
+8. [API Endpoints Lengkap](#-api-endpoints-lengkap)
+9. [Rotasi Token](#-rotasi-token)
+10. [Troubleshooting](#-troubleshooting)
 
 ---
 
-## 🔑 Token EnsembleData
+## ✅ Hasil Pengujian API Nyata
 
-Tim TITANPRO memiliki **14 token aktif** dari EnsembleData. Gunakan token-token ini secara bergantian (rotasi) untuk menghindari rate limiting.
+Pengujian dilakukan langsung ke EnsembleData API pada 13 Juli 2026. Berikut hasilnya:
 
-| No | Token |
-|----|-------|
-| 1  | `zuggud9kOyHnkIHL` |
-| 2  | `yJDMwCD5oyI3ElEg` |
-| 3  | `l9DuqQRF3KZd7MOs` |
-| 4  | `GXQvY67hiyH2Ul26` |
-| 5  | `rntdBXfZFtvNKpWy` |
-| 6  | `nfj8aPTaIUMPF34z` |
-| 7  | `xrKs7aJt6PyFmMOm` |
-| 8  | `bjO5IrICDJ4Xtb0m` |
-| 9  | `47VAv84ZMiGA4rkF` |
-| 10 | `qAcU7jq8pbfdOSCW` |
-| 11 | `LH8wW7LyNJnDjDIa` |
-| 12 | `DoPVCNC5gKcRdZfc` |
-| 13 | `c0Yi9f4flGoCLIvn` |
-| 14 | `xhazovP1LRUjPTPr` |
-| 15 | `KCMBLCVnYUmh1mik` |
+### TikTok — BERHASIL ✅
 
-> ⚠️ **Penting:** Jangan commit token langsung ke kode. Selalu gunakan environment variable `ENSEMBLEDATA_API_TOKEN`.
+```
+Endpoint: GET https://ensembledata.com/apis/tt/user/info?username=charlidamelio&token=nfj8aPTaIUMPF34z
+Status: HTTP 200 OK
+
+Hasil:
+  uniqueId   : charlidamelio
+  followers  : 159.200.072
+  following  : 1.400
+  videos     : 3.148
+  verified   : true
+```
+
+```
+Endpoint: GET https://ensembledata.com/apis/tt/user/posts?username=charlidamelio&depth=1&token=nfj8aPTaIUMPF34z
+Status: HTTP 200 OK
+
+Hasil:
+  Posts fetched  : 10 video
+  Latest video ID: 7661492762902023437
+  Play count     : 1.809.862
+  Like count     : 199.668
+  Comment count  : 1.500
+  Share count    : 1.799
+  Duration       : 20 detik
+  Created        : 2026-07-12
+```
+
+### Instagram — BERHASIL ✅
+
+```
+Endpoint: GET https://ensembledata.com/apis/instagram/user/info?username=nike&token=nfj8aPTaIUMPF34z
+Status: HTTP 200 OK
+
+Hasil:
+  user_id (pk) : 13460080
+  username     : nike
+  full_name    : Nike
+  is_verified  : true
+  is_private   : false
+```
+
+```
+Endpoint: GET https://ensembledata.com/apis/instagram/user/detailed-info?username=nike&token=bjO5IrICDJ4Xtb0m
+Status: HTTP 200 OK
+
+Hasil:
+  followers  : 291.798.749
+  media_count: 1.662
+  biography  : Just Do It.
+```
+
+```
+Endpoint: GET https://ensembledata.com/apis/instagram/user/posts?user_id=13460080&depth=1&token=nfj8aPTaIUMPF34z
+Status: HTTP 200 OK
+
+Hasil:
+  Response keys: { count, posts, last_cursor }
+  Posts fetched : sesuai depth
+```
+
+### ⚠️ Bug Ditemukan di INSTAGRAMSCRAP
+
+Saat pengujian ditemukan **bug kritis** di kode INSTAGRAMSCRAP:
+
+| | Kode (Salah) | Seharusnya |
+|---|---|---|
+| Base URL | `https://ensembledata.com/apis/ig` | `https://ensembledata.com/apis/instagram` |
+| Posts param | `username=...` | `user_id=...` (butuh pk dari `/user/info`) |
+
+Lihat bagian [Setup INSTAGRAMSCRAP](#-setup-instagramscrap--bug-fix) untuk cara fix-nya.
+
+---
+
+## 🔑 Token EnsembleData & Status
+
+Tim TITANPRO memiliki **15 token**. Quota reset setiap hari (jam 00:00 UTC).
+
+| No | Token | Status (13 Jul 2026) |
+|----|-------|----------------------|
+| 1  | `zuggud9kOyHnkIHL` | 🔴 Habis hari ini |
+| 2  | `yJDMwCD5oyI3ElEg` | 🔴 Habis hari ini |
+| 3  | `l9DuqQRF3KZd7MOs` | 🔴 Habis hari ini |
+| 4  | `GXQvY67hiyH2Ul26` | 🔴 Habis hari ini |
+| 5  | `rntdBXfZFtvNKpWy` | 🔴 Habis hari ini |
+| 6  | `nfj8aPTaIUMPF34z` | ✅ **Aktif** |
+| 7  | `xrKs7aJt6PyFmMOm` | 🔴 Habis hari ini |
+| 8  | `bjO5IrICDJ4Xtb0m` | ✅ **Aktif** |
+| 9  | `47VAv84ZMiGA4rkF` | 🔴 Habis hari ini |
+| 10 | `qAcU7jq8pbfdOSCW` | 🔴 Habis hari ini |
+| 11 | `LH8wW7LyNJnDjDIa` | 🔴 Habis hari ini |
+| 12 | `DoPVCNC5gKcRdZfc` | 🔴 Habis hari ini |
+| 13 | `c0Yi9f4flGoCLIvn` | 🔴 Habis hari ini |
+| 14 | `xhazovP1LRUjPTPr` | 🔴 Habis hari ini |
+| 15 | `KCMBLCVnYUmh1mik` | 🔴 Habis hari ini |
+
+> Token yang habis hari ini **otomatis reset besok**. Gunakan token aktif yang tersisa atau tunggu reset.
+
+**Cara cek token mana yang aktif:**
+```bash
+# Cek status token secara cepat (TikTok)
+curl -s "https://ensembledata.com/apis/tt/user/info?username=charlidamelio&token=TOKEN_DISINI" | grep -c '"uniqueId"'
+# Output 1 = aktif, 0 = tidak aktif
+
+# Cek status token (Instagram)
+curl -s "https://ensembledata.com/apis/instagram/user/info?username=nike&token=TOKEN_DISINI" | grep -c '"username"'
+# Output 1 = aktif, 0 = tidak aktif
+```
 
 ---
 
 ## 🏗️ Arsitektur Sistem
 
-Kedua project memiliki arsitektur yang sama (pnpm monorepo):
+Kedua project adalah pnpm monorepo dengan struktur yang sama:
 
 ```
 TIKTOKSCRAP / INSTAGRAMSCRAP
 ├── artifacts/
-│   ├── api-server/          ← Backend Express 5 (Node.js)
+│   ├── api-server/              ← Backend Express 5 (Node.js)
 │   │   └── src/
-│   │       ├── lib/         ← Logic scraping + analitik
-│   │       └── routes/      ← Endpoint REST API
-│   └── [frontend]/          ← Dashboard React (Vite)
+│   │       ├── lib/tiktok.ts    ← Logic scraping + analitik TikTok
+│   │       ├── lib/instagram.ts ← Logic scraping + analitik Instagram
+│   │       └── routes/          ← REST API endpoints
+│   └── [frontend]/              ← Dashboard React (Vite)
 ├── lib/
-│   ├── api-spec/            ← OpenAPI spec (kontrak API)
-│   ├── api-client-react/    ← React Query hooks (auto-generated)
-│   ├── api-zod/             ← Zod validation schemas
-│   └── db/                  ← Drizzle ORM + schema PostgreSQL
+│   ├── api-spec/openapi.yaml    ← Kontrak API (source of truth)
+│   ├── api-client-react/        ← React Query hooks (auto-generated)
+│   ├── api-zod/                 ← Zod schemas (auto-generated)
+│   └── db/                      ← Drizzle ORM + PostgreSQL schema
 └── pnpm-workspace.yaml
 ```
 
-**Flow data:**
+**Flow data (TikTok):**
 ```
-Input username/URL
-      ↓
-API Server (Express)
-      ↓
-EnsembleData API (data mentah)
-      ↓
-Normalisasi + Komputasi Analytics
-      ↓
-Simpan ke PostgreSQL
-      ↓
-Response JSON ke frontend/client
+Input: "charlidamelio" atau URL TikTok
+         ↓
+  Parse username (strip @, URL)
+         ↓
+  EnsembleData /tt/user/info    → profil akun
+  EnsembleData /tt/user/posts   → video terbaru (depth × ~10 video)
+         ↓
+  Normalisasi + Hitung Analytics
+  (engagement rate, tiers, hashtags, benchmark, growth potential)
+         ↓
+  Simpan ke PostgreSQL
+         ↓
+  Response JSON → Frontend dashboard
+```
+
+**Flow data (Instagram):**
+```
+Input: "nike" atau URL Instagram
+         ↓
+  Parse username (strip @, URL, /?hl=id)
+         ↓
+  EnsembleData /instagram/user/info        → dapat user_id (pk)
+  EnsembleData /instagram/user/detailed-info → follower, bio, media_count
+  EnsembleData /instagram/user/posts (user_id) → postingan terbaru
+         ↓
+  Normalisasi + Hitung Analytics
+         ↓
+  Simpan ke PostgreSQL
+         ↓
+  Response JSON → Frontend dashboard
 ```
 
 ---
 
 ## ⚙️ Setup TIKTOKSCRAP
 
-### 1. Clone repo
+### 1. Clone & install
 
 ```bash
 git clone https://github.com/TlTANPRO/TIKTOKSCRAP.git
 cd TIKTOKSCRAP
-```
-
-### 2. Install dependencies
-
-```bash
 pnpm install
 ```
 
-### 3. Setup environment variables
-
-Buat file `.env` di root project:
+### 2. Buat file `.env`
 
 ```env
-# Database PostgreSQL
+# Wajib: PostgreSQL connection string
 DATABASE_URL=postgresql://user:password@localhost:5432/tiktokscrap
 
-# EnsembleData API Token (pilih salah satu dari daftar token di atas)
-ENSEMBLEDATA_API_TOKEN=zuggud9kOyHnkIHL
+# Wajib: Token EnsembleData (gunakan yang masih aktif)
+ENSEMBLEDATA_API_TOKEN=nfj8aPTaIUMPF34z
 
-# Session secret (opsional, untuk auth)
-SESSION_SECRET=random_secret_string_minimal_32_char
+# Opsional
+SESSION_SECRET=isi_dengan_string_acak_min_32_karakter
 ```
 
-### 4. Setup database
+### 3. Push schema database
 
 ```bash
-# Push schema ke database
 pnpm --filter @workspace/db run push
 ```
 
-### 5. Jalankan API server
+### 4. Jalankan API server
 
 ```bash
 pnpm --filter @workspace/api-server run dev
+# Server berjalan di http://localhost:5000
 ```
 
-Server berjalan di port **5000** (atau port yang dikonfigurasi di workflow).
-
-### 6. Jalankan frontend (opsional)
+### 5. Verifikasi server berjalan
 
 ```bash
-pnpm --filter @workspace/tiktok-insight run dev
+curl http://localhost:5000/api/healthz
+# Response: {"status":"ok"}
+```
+
+### 6. Test scraping pertama
+
+```bash
+curl -X POST http://localhost:5000/api/tiktok/analyses \
+  -H "Content-Type: application/json" \
+  -d '{"input": "charlidamelio"}'
 ```
 
 ---
 
-## ⚙️ Setup INSTAGRAMSCRAP
+## ⚙️ Setup INSTAGRAMSCRAP + Bug Fix
 
-### 1. Clone repo
+### 1. Clone & install
 
 ```bash
 git clone https://github.com/TlTANPRO/INSTAGRAMSCRAP.git
 cd INSTAGRAMSCRAP
-```
-
-### 2. Install dependencies
-
-```bash
 pnpm install
 ```
 
-### 3. Setup environment variables
+### 2. Fix bug base URL (WAJIB)
 
-```env
-# Database PostgreSQL
-DATABASE_URL=postgresql://user:password@localhost:5432/instagramscrap
+Buka file `artifacts/api-server/src/lib/instagram.ts`, cari baris ini:
 
-# EnsembleData API Token
-ENSEMBLEDATA_API_TOKEN=yJDMwCD5oyI3ElEg
-
-# Session secret
-SESSION_SECRET=random_secret_string_minimal_32_char
+```typescript
+// SALAH — endpoint ini tidak tersedia
+const ENSEMBLE_BASE_URL = "https://ensembledata.com/apis/ig";
 ```
 
-### 4. Setup database
+Ganti menjadi:
+
+```typescript
+// BENAR — verified dari pengujian nyata
+const ENSEMBLE_BASE_URL = "https://ensembledata.com/apis/instagram";
+```
+
+### 3. Fix bug parameter Instagram posts (WAJIB)
+
+Masih di file `instagram.ts`, fungsi `fetchInstagramPosts` memanggil endpoint dengan `username`.
+Padahal endpoint `/instagram/user/posts` butuh `user_id` (nilai `pk` dari `/user/info`).
+
+Pastikan alur di kode adalah:
+1. Panggil `/instagram/user/info?username=...` → ambil nilai `pk`
+2. Panggil `/instagram/user/posts?user_id={pk}&depth=...` → ambil postingan
+
+Contoh fix di `instagram.ts`:
+
+```typescript
+// Langkah 1: dapatkan user_id dulu
+const infoResult = await ensembleGet("/user/info", { username });
+const pk = (infoResult.data as Record<string, unknown>)?.pk as string;
+
+// Langkah 2: ambil posts pakai user_id
+const postsResult = await ensembleGet("/user/posts", { user_id: pk, depth: String(depth) });
+```
+
+### 4. Buat file `.env`
+
+```env
+DATABASE_URL=postgresql://user:password@localhost:5432/instagramscrap
+ENSEMBLEDATA_API_TOKEN=nfj8aPTaIUMPF34z
+SESSION_SECRET=isi_dengan_string_acak_min_32_karakter
+```
+
+### 5. Push schema & jalankan
 
 ```bash
 pnpm --filter @workspace/db run push
+pnpm --filter @workspace/api-server run dev
 ```
 
-### 5. Jalankan server
+### 6. Test scraping pertama
 
 ```bash
-pnpm --filter @workspace/api-server run dev
+curl -X POST http://localhost:5000/api/instagram/analyses \
+  -H "Content-Type: application/json" \
+  -d '{"input": "nike"}'
 ```
 
 ---
 
 ## 📱 Cara Scraping TikTok
 
-### Melalui Frontend (Dashboard)
-
-Buka browser, akses dashboard TIKTOKSCRAP, masukkan username atau URL akun TikTok, klik **Analisis**.
-
-### Melalui API (curl / Postman)
-
-#### Analisis akun baru
+### Format input yang diterima
 
 ```bash
-curl -X POST http://localhost:5000/api/tiktok/analyses \
-  -H "Content-Type: application/json" \
-  -d '{"input": "@namaakun"}'
+# Semua format berikut diproses dengan benar:
+{"input": "charlidamelio"}           # tanpa @
+{"input": "@charlidamelio"}          # dengan @
+{"input": "https://www.tiktok.com/@charlidamelio"}        # URL penuh
+{"input": "https://www.tiktok.com/@charlidamelio?lang=en"} # URL dengan parameter
 ```
 
-Format input yang diterima:
-- Username dengan @: `@namaakun`
-- Username tanpa @: `namaakun`
-- URL profil penuh: `https://www.tiktok.com/@namaakun`
-- URL dengan parameter: `https://www.tiktok.com/@namaakun?lang=en`
+### Via API (curl)
 
-#### Contoh response scraping TikTok
+```bash
+# Analisis akun baru (simpan ke database)
+curl -X POST http://localhost:5000/api/tiktok/analyses \
+  -H "Content-Type: application/json" \
+  -d '{"input": "@charlidamelio"}'
+
+# Lihat semua analisis tersimpan
+curl http://localhost:5000/api/tiktok/analyses
+
+# Lihat detail analisis id=1
+curl http://localhost:5000/api/tiktok/analyses/1
+
+# Hapus analisis id=1
+curl -X DELETE http://localhost:5000/api/tiktok/analyses/1
+```
+
+### Contoh response TikTok
 
 ```json
 {
   "id": 1,
-  "input": "@namaakun",
+  "input": "@charlidamelio",
   "profile": {
-    "uniqueId": "namaakun",
-    "nickname": "Nama Akun",
-    "avatarUrl": "https://...",
-    "bio": "Bio akun...",
-    "verified": false,
-    "followerCount": 150000,
-    "followingCount": 300,
-    "heartCount": 2500000,
-    "videoCount": 87,
+    "uniqueId": "charlidamelio",
+    "nickname": "charli d'amelio",
+    "avatarUrl": "https://p16-common-sign.tiktokcdn-eu.com/...",
+    "bio": "",
+    "verified": true,
+    "followerCount": 159200072,
+    "followingCount": 1400,
+    "heartCount": 0,
+    "videoCount": 3148,
     "friendCount": 0
   },
   "videos": [
     {
-      "id": "7123456789",
-      "description": "Caption video #hashtag",
-      "createTime": 1720000000,
+      "id": "7661492762902023437",
+      "description": "",
+      "createTime": 1752291915,
       "coverUrl": "https://...",
       "videoUrl": "https://...",
-      "playCount": 125000,
-      "diggCount": 8500,
-      "commentCount": 342,
-      "shareCount": 1200,
-      "collectCount": 450,
-      "durationSeconds": 30
+      "playCount": 1809862,
+      "diggCount": 199668,
+      "commentCount": 1500,
+      "shareCount": 1799,
+      "collectCount": 0,
+      "durationSeconds": 20
     }
   ],
   "aggregates": {
-    "totalVideosAnalyzed": 87,
-    "totalPlayCount": 5200000,
-    "totalDiggCount": 380000,
-    "avgPlayCount": 59770,
-    "avgDiggCount": 4367,
-    "engagementRate": 7.3,
-    "postsPerWeek": 4.2
+    "totalVideosAnalyzed": 100,
+    "totalPlayCount": 180000000,
+    "avgPlayCount": 1800000,
+    "engagementRate": 11.1,
+    "postsPerWeek": 3.5
   },
   "insights": {
-    "topByViews": [...],
-    "topByLikes": [...],
-    "topByComments": [...],
     "performanceTiers": {
-      "viral": 3,
-      "tinggi": 12,
-      "bagus": 25,
-      "rataRata": 30,
-      "rendah": 17
+      "viral": 15,
+      "tinggi": 22,
+      "bagus": 30,
+      "rataRata": 20,
+      "rendah": 13
     },
     "topHashtags": [
       {"tag": "#fyp", "count": 45},
-      {"tag": "#viral", "count": 32}
+      {"tag": "#dance", "count": 32}
     ],
-    "performanceByDayOfWeek": [...],
-    "marketInsights": {
-      "strengths": ["Engagement rate 7.3% berada di atas rata-rata industri (5.5%)"],
-      "weaknesses": ["..."],
-      "recommendations": ["..."]
+    "growthPotential": {
+      "score": 78,
+      "label": "tinggi",
+      "reasoning": "Engagement rate dan konsistensi posting di atas rata-rata industri."
     },
     "industryBenchmark": {
       "engagementRateBenchmark": 5.5,
       "engagementRateComparison": "above",
-      "viewsPerFollowerBenchmark": 0.5,
-      "accountViewsPerFollower": 0.4,
-      "viewsPerFollowerComparison": "below",
       "postingFrequencyBenchmark": 4,
       "postingFrequencyComparison": "average"
     },
-    "growthPotential": {
-      "score": 72,
-      "label": "tinggi",
-      "reasoning": "Kombinasi engagement rate, konsistensi posting, dan proporsi video berperforma tinggi menunjukkan momentum pertumbuhan yang kuat."
+    "marketInsights": {
+      "strengths": ["Engagement rate 11.1% jauh di atas rata-rata industri (5.5%)"],
+      "weaknesses": [],
+      "recommendations": []
     }
   },
   "growthHistory": [
-    {"date": "2025-06-01T00:00:00Z", "followerCount": 140000, "videoCount": 80},
-    {"date": "2025-07-01T00:00:00Z", "followerCount": 150000, "videoCount": 87}
+    {"date": "2026-07-13T10:00:00Z", "followerCount": 159200072, "videoCount": 3148}
   ],
-  "createdAt": "2025-07-13T10:00:00Z"
+  "createdAt": "2026-07-13T10:00:00Z"
 }
 ```
 
-### Parameter Scraping TikTok (Internal)
+### Parameter kedalaman scraping
 
-File `artifacts/api-server/src/lib/tiktok.ts`:
+Di file `artifacts/api-server/src/lib/tiktok.ts`:
 
 ```typescript
-// Jumlah halaman yang diambil dari EnsembleData
-// depth=10 → ±90-100 video terbaru (sekitar 17 detik)
+// depth=10 → ~100 video terbaru (~17 detik proses)
+// depth=5  → ~50 video (lebih cepat)
+// depth=1  → ~10 video (untuk test)
 export const SCRAPE_DEPTH = 10;
 ```
-
-Untuk mengubah kedalaman scraping (lebih banyak/sedikit video), edit konstanta `SCRAPE_DEPTH`.
-
-### Endpoint TikTok API: `/apis/tt`
-
-EnsembleData TikTok endpoints yang digunakan:
-
-| Endpoint | Parameter | Keterangan |
-|----------|-----------|------------|
-| `GET /apis/tt/user/info` | `username`, `token` | Profil akun TikTok |
-| `GET /apis/tt/user/posts` | `username`, `depth`, `token` | Video terbaru |
 
 ---
 
 ## 📸 Cara Scraping Instagram
 
-### Melalui Frontend (Dashboard)
-
-Buka dashboard INSTAGRAMSCRAP, masukkan username atau URL profil Instagram, klik **Analisis**.
-
-### Melalui API (curl / Postman)
-
-#### Analisis akun baru
+### Format input yang diterima
 
 ```bash
-curl -X POST http://localhost:5000/api/instagram/analyses \
-  -H "Content-Type: application/json" \
-  -d '{"input": "@namaakun"}'
+{"input": "nike"}                                      # tanpa @
+{"input": "@nike"}                                     # dengan @
+{"input": "https://www.instagram.com/nike/"}           # URL penuh
+{"input": "https://www.instagram.com/nike/?hl=id"}     # URL dengan parameter bahasa
 ```
 
-Format input yang diterima:
-- Username dengan @: `@namaakun`
-- Username tanpa @: `namaakun`
-- URL profil: `https://www.instagram.com/namaakun/`
-- URL dengan parameter: `https://www.instagram.com/namaakun/?hl=id`
+### Via API (curl)
 
-#### Contoh response scraping Instagram
+```bash
+# Analisis akun baru
+curl -X POST http://localhost:5000/api/instagram/analyses \
+  -H "Content-Type: application/json" \
+  -d '{"input": "nike"}'
+
+# Lihat semua analisis tersimpan
+curl http://localhost:5000/api/instagram/analyses
+
+# Detail analisis id=1
+curl http://localhost:5000/api/instagram/analyses/1
+
+# Hapus analisis id=1
+curl -X DELETE http://localhost:5000/api/instagram/analyses/1
+```
+
+### Contoh response Instagram
 
 ```json
 {
   "id": 1,
-  "input": "@namaakun",
+  "input": "nike",
   "profile": {
-    "username": "namaakun",
-    "fullName": "Nama Lengkap Akun",
-    "profilePicUrl": "https://...",
-    "biography": "Bio akun Instagram...",
-    "verified": false,
-    "followerCount": 85000,
-    "followingCount": 500,
-    "postCount": 142,
-    "externalUrl": "https://linktr.ee/namaakun"
+    "username": "nike",
+    "fullName": "Nike",
+    "profilePicUrl": "https://scontent-tpe1-1.cdninstagram.com/...",
+    "biography": "Just Do It.",
+    "verified": true,
+    "followerCount": 291798749,
+    "followingCount": 0,
+    "postCount": 1662,
+    "externalUrl": ""
   },
   "posts": [
     {
-      "id": "ABC123xyz",
-      "caption": "Caption postingan #hashtag @mention",
-      "createTime": 1720000000,
+      "id": "3ABC123xyz",
+      "caption": "Caption postingan #hashtag",
+      "createTime": 1752000000,
       "thumbnailUrl": "https://...",
-      "postUrl": "https://www.instagram.com/p/ABC123xyz/",
+      "postUrl": "https://www.instagram.com/p/3ABC123xyz/",
       "mediaType": "GraphImage",
-      "likeCount": 3200,
-      "commentCount": 87,
-      "viewCount": 15000,
-      "saveCount": 420,
+      "likeCount": 45000,
+      "commentCount": 1200,
+      "viewCount": 500000,
+      "saveCount": 8000,
       "durationSeconds": 0
     }
   ],
   "aggregates": {
     "totalPostsAnalyzed": 96,
-    "totalLikeCount": 280000,
-    "totalCommentCount": 7500,
-    "totalViewCount": 1200000,
-    "totalSaveCount": 35000,
-    "avgLikeCount": 2916,
-    "avgCommentCount": 78,
-    "avgViewCount": 12500,
-    "avgSaveCount": 364,
-    "engagementRate": 3.8,
-    "postsPerWeek": 2.1,
-    "mostViewedPostId": "DEF456",
-    "mostLikedPostId": "GHI789"
+    "avgLikeCount": 42000,
+    "engagementRate": 0.014,
+    "postsPerWeek": 3.2
   },
   "insights": {
-    "topByViews": [...],
-    "topByLikes": [...],
-    "topByComments": [...],
     "performanceTiers": {
-      "viral": 5,
-      "tinggi": 18,
-      "bagus": 30,
-      "rataRata": 28,
-      "rendah": 15
+      "viral": 8,
+      "tinggi": 20,
+      "bagus": 35,
+      "rataRata": 25,
+      "rendah": 8
     },
-    "topHashtags": [
-      {"tag": "#indonesia", "count": 60},
-      {"tag": "#lifestyle", "count": 45}
-    ],
-    "topMentions": [
-      {"mention": "@brand_partner", "count": 12}
-    ],
-    "performanceByDayOfWeek": [
-      {"day": "Senin", "avgLikeCount": 3100, "avgCommentCount": 82},
-      {"day": "Selasa", "avgLikeCount": 2800, "avgCommentCount": 75}
-    ],
-    "marketInsights": {
-      "strengths": ["Engagement rate 3.8% cukup kompetitif untuk niche lifestyle"],
-      "weaknesses": ["Frekuensi posting 2.1x/minggu masih rendah"],
-      "recommendations": ["Tingkatkan konsistensi posting minimal 3-4x per minggu"]
-    },
-    "growthPotential": {
-      "score": 55,
-      "label": "sedang",
-      "reasoning": "Ada sinyal pertumbuhan positif, namun beberapa metrik masih bisa dioptimalkan."
-    }
+    "topHashtags": [{"tag": "#nike", "count": 50}],
+    "growthPotential": {"score": 65, "label": "sedang", "reasoning": "..."}
   },
   "growthHistory": [...],
-  "createdAt": "2025-07-13T10:00:00Z"
+  "createdAt": "2026-07-13T10:00:00Z"
 }
 ```
 
-### Parameter Scraping Instagram (Internal)
+### Parameter kedalaman scraping
 
-File `artifacts/api-server/src/lib/instagram.ts`:
+Di file `artifacts/api-server/src/lib/instagram.ts`:
 
 ```typescript
-// Jumlah halaman pagination yang diambil
-// depth=8 → ±96 postingan terbaru
+// depth=8 → ~96 postingan terbaru
+// depth=4 → ~48 postingan (lebih cepat)
+// depth=1 → ~12 postingan (untuk test)
 export const SCRAPE_DEPTH = 8;
 ```
-
-### Endpoint Instagram API: `/apis/ig`
-
-EnsembleData Instagram endpoints yang digunakan:
-
-| Endpoint | Parameter | Keterangan |
-|----------|-----------|------------|
-| `GET /apis/ig/user/info` | `username`, `token` | Profil akun Instagram |
-| `GET /apis/ig/user/posts` | `username`, `depth`, `token` | Postingan terbaru |
 
 ---
 
 ## 🌐 API Endpoints Lengkap
 
-### TikTok Endpoints
+### EnsembleData API (Terverifikasi)
+
+Base URL: `https://ensembledata.com/apis`
+
+#### TikTok (`/tt/...`)
+
+| Endpoint | Parameter Wajib | Keterangan |
+|----------|----------------|------------|
+| `GET /tt/user/info` | `username`, `token` | Profil akun TikTok |
+| `GET /tt/user/posts` | `username`, `depth`, `token` | Video terbaru (~10/depth) |
+| `GET /tt/user/search` | `keyword`, `token` | Cari akun TikTok |
+| `GET /tt/post/info` | `aweme_id`, `token` | Detail satu video |
+| `GET /tt/post/comments` | `aweme_id`, `token` | Komentar video |
+| `GET /tt/hashtag/posts` | `hashtag`, `token` | Video berdasarkan hashtag |
+| `GET /tt/keyword/search` | `keyword`, `token` | Cari konten |
+
+#### Instagram (`/instagram/...`)
+
+| Endpoint | Parameter Wajib | Keterangan |
+|----------|----------------|------------|
+| `GET /instagram/user/info` | `username`, `token` | Profil dasar (dapat `pk`/user_id) |
+| `GET /instagram/user/detailed-info` | `username`, `token` | Profil lengkap + follower count |
+| `GET /instagram/user/posts` | `user_id`, `depth`, `token` | Postingan terbaru |
+| `GET /instagram/user/reels` | `user_id`, `token` | Reels terbaru |
+| `GET /instagram/user/tagged-posts` | `user_id`, `token` | Post yang tag akun ini |
+| `GET /instagram/user/followers` | `user_id`, `token` | Daftar follower |
+| `GET /instagram/post/details` | `post_id`, `token` | Detail satu postingan |
+| `GET /instagram/post/comments` | `post_id`, `token` | Komentar postingan |
+| `GET /instagram/search` | `keyword`, `token` | Cari akun/hashtag |
+
+> **Penting:** Instagram posts membutuhkan `user_id` (nilai `pk` dari endpoint `/user/info`), **bukan** username.
+
+### TITANPRO API Server Endpoints
 
 | Method | Path | Keterangan |
 |--------|------|------------|
-| `GET` | `/api/tiktok/analyses` | Daftar semua analisis yang tersimpan |
-| `POST` | `/api/tiktok/analyses` | Analisis akun TikTok baru |
-| `GET` | `/api/tiktok/analyses/:id` | Detail satu analisis |
-| `DELETE` | `/api/tiktok/analyses/:id` | Hapus satu analisis |
-| `GET` | `/api/healthz` | Cek status server |
-
-### Instagram Endpoints
-
-| Method | Path | Keterangan |
-|--------|------|------------|
-| `GET` | `/api/instagram/analyses` | Daftar semua analisis yang tersimpan |
-| `POST` | `/api/instagram/analyses` | Analisis akun Instagram baru |
-| `GET` | `/api/instagram/analyses/:id` | Detail satu analisis |
-| `DELETE` | `/api/instagram/analyses/:id` | Hapus satu analisis |
-| `GET` | `/api/healthz` | Cek status server |
-
-### Contoh Penggunaan Lengkap (curl)
-
-```bash
-# Cek status server
-curl http://localhost:5000/api/healthz
-
-# --- TikTok ---
-
-# Scrape akun TikTok (username)
-curl -X POST http://localhost:5000/api/tiktok/analyses \
-  -H "Content-Type: application/json" \
-  -d '{"input": "namaakun"}'
-
-# Scrape akun TikTok (URL)
-curl -X POST http://localhost:5000/api/tiktok/analyses \
-  -H "Content-Type: application/json" \
-  -d '{"input": "https://www.tiktok.com/@namaakun"}'
-
-# Lihat semua analisis TikTok
-curl http://localhost:5000/api/tiktok/analyses
-
-# Lihat detail analisis TikTok id=1
-curl http://localhost:5000/api/tiktok/analyses/1
-
-# Hapus analisis TikTok id=1
-curl -X DELETE http://localhost:5000/api/tiktok/analyses/1
-
-# --- Instagram ---
-
-# Scrape akun Instagram
-curl -X POST http://localhost:5000/api/instagram/analyses \
-  -H "Content-Type: application/json" \
-  -d '{"input": "namaakun"}'
-
-# Scrape via URL Instagram
-curl -X POST http://localhost:5000/api/instagram/analyses \
-  -H "Content-Type: application/json" \
-  -d '{"input": "https://www.instagram.com/namaakun/"}'
-
-# Lihat semua analisis Instagram
-curl http://localhost:5000/api/instagram/analyses
-
-# Lihat detail analisis Instagram id=3
-curl http://localhost:5000/api/instagram/analyses/3
-
-# Hapus analisis Instagram id=3
-curl -X DELETE http://localhost:5000/api/instagram/analyses/3
-```
+| `GET` | `/api/healthz` | Status server |
+| `POST` | `/api/tiktok/analyses` | Mulai analisis TikTok baru |
+| `GET` | `/api/tiktok/analyses` | Daftar semua analisis TikTok |
+| `GET` | `/api/tiktok/analyses/:id` | Detail satu analisis TikTok |
+| `DELETE` | `/api/tiktok/analyses/:id` | Hapus analisis TikTok |
+| `POST` | `/api/instagram/analyses` | Mulai analisis Instagram baru |
+| `GET` | `/api/instagram/analyses` | Daftar semua analisis Instagram |
+| `GET` | `/api/instagram/analyses/:id` | Detail satu analisis Instagram |
+| `DELETE` | `/api/instagram/analyses/:id` | Hapus analisis Instagram |
 
 ---
 
 ## 🔄 Rotasi Token
 
-Karena EnsembleData menerapkan rate limiting per token, gunakan strategi rotasi berikut saat scraping massal:
-
-### Strategi 1: Rotasi Manual
-
-Ganti `ENSEMBLEDATA_API_TOKEN` di `.env` setiap kali muncul error rate limit (HTTP 429):
-
-```bash
-# Token 1 habis → ganti ke token 2
-ENSEMBLEDATA_API_TOKEN=yJDMwCD5oyI3ElEg
+Setiap token EnsembleData memiliki quota harian. Setelah habis, muncul pesan:
+```json
+{"detail": "Maximum requests limit reached for today. Send an email at hello@ensembledata.com"}
 ```
 
-Restart server setelah ganti token:
-```bash
-# Stop server (Ctrl+C), lalu:
-pnpm --filter @workspace/api-server run dev
-```
+### Cara cek semua token sekaligus
 
-### Strategi 2: Rotasi Otomatis (Script Bash)
-
-Script ini melakukan scraping ke banyak akun dengan rotasi token otomatis:
+Simpan script ini sebagai `cek_token.sh`:
 
 ```bash
 #!/bin/bash
-# rotate_scrape.sh — Scraping dengan rotasi token otomatis
+# cek_token.sh — Cek status semua token TITANPRO
 
 TOKENS=(
   "zuggud9kOyHnkIHL"
@@ -557,122 +618,59 @@ TOKENS=(
   "KCMBLCVnYUmh1mik"
 )
 
-# Daftar akun yang mau di-scrape
-ACCOUNTS=(
-  "akun1"
-  "akun2"
-  "akun3"
-  # tambah akun lain di sini
-)
-
-TOKEN_INDEX=0
-PLATFORM="tiktok"  # Ganti ke "instagram" untuk Instagram
-
-for account in "${ACCOUNTS[@]}"; do
-  TOKEN="${TOKENS[$TOKEN_INDEX]}"
-  echo "Scraping @$account dengan token ke-$((TOKEN_INDEX + 1))..."
-
-  # Update token di .env (jika server butuh restart)
-  # Atau jika server sudah support multi-token, kirim via header
-
-  RESPONSE=$(curl -s -o /tmp/response.json -w "%{http_code}" \
-    -X POST "http://localhost:5000/api/${PLATFORM}/analyses" \
-    -H "Content-Type: application/json" \
-    -d "{\"input\": \"$account\"}")
-
-  if [ "$RESPONSE" = "429" ]; then
-    echo "Rate limit! Rotate ke token berikutnya..."
-    TOKEN_INDEX=$(( (TOKEN_INDEX + 1) % ${#TOKENS[@]} ))
-    sleep 5
-    # Retry dengan token baru (perlu update env dan restart)
-  elif [ "$RESPONSE" = "201" ]; then
-    echo "✅ Berhasil scrape @$account"
-    TOKEN_INDEX=$(( (TOKEN_INDEX + 1) % ${#TOKENS[@]} ))
+echo "=== Cek Token TikTok ($(date)) ==="
+for token in "${TOKENS[@]}"; do
+  resp=$(curl -s "https://ensembledata.com/apis/tt/user/info?username=charlidamelio&token=$token")
+  if echo "$resp" | grep -q '"uniqueId"\|"followerCount"'; then
+    echo "✅ AKTIF  → $token"
+  elif echo "$resp" | grep -q "Maximum requests"; then
+    echo "🔴 HABIS  → $token"
   else
-    echo "❌ Error $RESPONSE untuk @$account"
+    echo "❓ UNKNOWN → $token | $(echo $resp | head -c 60)"
   fi
-
-  # Jeda antar request untuk menghindari rate limit
-  sleep 2
 done
-
-echo "Selesai!"
 ```
 
-### Strategi 3: Modifikasi Server untuk Multi-Token
+```bash
+chmod +x cek_token.sh
+./cek_token.sh
+```
 
-Edit `artifacts/api-server/src/lib/tiktok.ts` (atau `instagram.ts`) untuk rotasi token otomatis di level kode:
+### Ganti token di `.env` dan restart server
+
+```bash
+# Edit .env
+ENSEMBLEDATA_API_TOKEN=bjO5IrICDJ4Xtb0m   # ganti ke token aktif lain
+
+# Restart API server (Ctrl+C dulu, lalu:)
+pnpm --filter @workspace/api-server run dev
+```
+
+### Rotasi otomatis di kode server (opsional)
+
+Edit `artifacts/api-server/src/lib/tiktok.ts` dan `instagram.ts` untuk rotasi otomatis:
 
 ```typescript
-// Tambahkan di awal file
+// Ganti fungsi getApiToken() yang ada dengan ini:
 const ENSEMBLE_TOKENS = [
-  "zuggud9kOyHnkIHL",
-  "yJDMwCD5oyI3ElEg",
-  "l9DuqQRF3KZd7MOs",
-  "GXQvY67hiyH2Ul26",
-  "rntdBXfZFtvNKpWy",
-  "nfj8aPTaIUMPF34z",
-  "xrKs7aJt6PyFmMOm",
-  "bjO5IrICDJ4Xtb0m",
-  "47VAv84ZMiGA4rkF",
-  "qAcU7jq8pbfdOSCW",
-  "LH8wW7LyNJnDjDIa",
-  "DoPVCNC5gKcRdZfc",
-  "c0Yi9f4flGoCLIvn",
-  "xhazovP1LRUjPTPr",
-  "KCMBLCVnYUmh1mik",
+  "zuggud9kOyHnkIHL", "yJDMwCD5oyI3ElEg", "l9DuqQRF3KZd7MOs",
+  "GXQvY67hiyH2Ul26", "rntdBXfZFtvNKpWy", "nfj8aPTaIUMPF34z",
+  "xrKs7aJt6PyFmMOm", "bjO5IrICDJ4Xtb0m", "47VAv84ZMiGA4rkF",
+  "qAcU7jq8pbfdOSCW", "LH8wW7LyNJnDjDIa", "DoPVCNC5gKcRdZfc",
+  "c0Yi9f4flGoCLIvn", "xhazovP1LRUjPTPr", "KCMBLCVnYUmh1mik",
 ];
 
-let tokenIndex = 0;
+let _tokenIdx = 0;
 
 function getApiToken(): string {
-  // Rotasi round-robin
-  const token = ENSEMBLE_TOKENS[tokenIndex % ENSEMBLE_TOKENS.length];
-  tokenIndex++;
+  // Round-robin: ganti token setiap request
+  const token = ENSEMBLE_TOKENS[_tokenIdx % ENSEMBLE_TOKENS.length];
+  _tokenIdx++;
   return token;
 }
-
-// Ganti fungsi getApiToken() yang ada (yang membaca dari env)
-// dengan versi di atas untuk rotasi otomatis tanpa restart
 ```
 
----
-
-## 🗃️ Schema Database
-
-### TikTok (`tiktok_analyses`)
-
-| Kolom | Tipe | Keterangan |
-|-------|------|------------|
-| `id` | serial (PK) | ID unik analisis |
-| `input` | text | Input asli user (@username / URL) |
-| `unique_id` | text | Username TikTok (normalized) |
-| `nickname` | text | Nama tampilan akun |
-| `avatar_url` | text | URL foto profil |
-| `follower_count` | integer | Jumlah followers |
-| `video_count` | integer | Jumlah video |
-| `profile` | jsonb | Data profil lengkap |
-| `videos` | jsonb | Array semua video yang diambil |
-| `aggregates` | jsonb | Statistik agregat |
-| `insights` | jsonb | Insights & analitik mendalam |
-| `created_at` | timestamp | Waktu scraping |
-
-### Instagram (`instagram_analyses`)
-
-| Kolom | Tipe | Keterangan |
-|-------|------|------------|
-| `id` | serial (PK) | ID unik analisis |
-| `input` | text | Input asli user |
-| `username` | text | Username Instagram (normalized) |
-| `full_name` | text | Nama lengkap akun |
-| `profile_pic_url` | text | URL foto profil |
-| `follower_count` | integer | Jumlah followers |
-| `post_count` | integer | Jumlah postingan |
-| `profile` | jsonb | Data profil lengkap |
-| `posts` | jsonb | Array semua postingan yang diambil |
-| `aggregates` | jsonb | Statistik agregat |
-| `insights` | jsonb | Insights & analitik mendalam |
-| `created_at` | timestamp | Waktu scraping |
+Dengan ini, setiap request otomatis berganti token sehingga quota tersebar merata ke semua token.
 
 ---
 
@@ -680,79 +678,85 @@ function getApiToken(): string {
 
 ### TikTok
 
-- **Engagement Rate** = (likes + comments + shares) / plays × 100%
-- **Posts per Week** — Frekuensi posting mingguan
-- **Performance Tiers** — Klasifikasi video: Viral (3x rata-rata likes), Tinggi (1.5x), Bagus (0.75x), Rata-rata (0.3x), Rendah (<0.3x)
-- **Top Hashtags** — Hashtag paling sering digunakan
-- **Top Mentions** — Akun paling sering di-mention
-- **Performance by Day of Week** — Hari terbaik untuk posting
-- **Duration Analysis** — Performa berdasarkan durasi video
-- **Industry Benchmark** — Perbandingan vs rata-rata industri TikTok (ER: 5.5%, views/follower: 0.5, posting: 4x/minggu)
-- **Growth Potential Score** — Skor 0-100 dengan label rendah/sedang/tinggi
+| Metrik | Formula |
+|--------|---------|
+| Engagement Rate | `(likes + comments + shares) / plays × 100%` |
+| Posts/Week | Rata-rata video diunggah per minggu |
+| Performance Tier | Viral (≥3× rata-rata likes), Tinggi (≥1.5×), Bagus (≥0.75×), Rata-rata (≥0.3×), Rendah (<0.3×) |
+| Growth Potential Score | Skor 0–100 (rendah / sedang / tinggi) |
+| Industry Benchmark | ER: 5.5%, views/follower: 0.5, frekuensi: 4×/minggu |
 
 ### Instagram
 
-- **Engagement Rate** = (likes + comments + saves) / followers × 100%
-- **Posts per Week** — Frekuensi posting mingguan
-- **Performance Tiers** — Sama seperti TikTok
-- **Top Hashtags** — Hashtag paling sering dipakai
-- **Top Mentions** — Akun paling sering di-mention
-- **Performance by Month** — Tren bulanan performa konten
-- **Duration Analysis** — Untuk konten Reels
-- **Industry Benchmark** — Perbandingan vs standar industri Instagram
-- **Growth Potential Score** — Skor 0-100 dengan label rendah/sedang/tinggi
+| Metrik | Formula |
+|--------|---------|
+| Engagement Rate | `(likes + comments + saves) / followers × 100%` |
+| Posts/Week | Rata-rata postingan per minggu |
+| Performance Tier | Sama seperti TikTok |
+| Growth Potential Score | Skor 0–100 |
+
+Analytics lain yang tersedia di kedua platform:
+- Top 5 video/post by views, likes, comments
+- Top 10 hashtag yang paling sering digunakan
+- Top mentions (@akun paling sering di-mention)
+- Performa per hari dalam seminggu (Senin–Minggu)
+- Tren performa per bulan
+- Analisis durasi konten (video pendek vs panjang)
+- Ringkasan tahunan (year-over-year)
+- Market insights: strengths, weaknesses, recommendations
 
 ---
 
 ## 🔧 Troubleshooting
 
-### Error: `ENSEMBLEDATA_API_TOKEN is not configured`
+### ❌ "ENSEMBLEDATA_API_TOKEN is not configured"
 
-**Penyebab:** Environment variable belum di-set.
-
-**Solusi:**
+Server tidak menemukan token. Pastikan `.env` ada dan berisi token:
 ```bash
-# Pastikan .env ada dan berisi token
-cat .env | grep ENSEMBLEDATA
-
-# Atau set langsung saat jalankan server
-ENSEMBLEDATA_API_TOKEN=zuggud9kOyHnkIHL pnpm --filter @workspace/api-server run dev
+cat .env | grep ENSEMBLEDATA_API_TOKEN
+# Jika kosong:
+echo "ENSEMBLEDATA_API_TOKEN=nfj8aPTaIUMPF34z" >> .env
+# Restart server
 ```
 
 ---
 
-### Error: `Failed to reach the TikTok/Instagram data provider` (502)
+### ❌ "Maximum requests limit reached for today" (TikTok/Instagram)
 
-**Penyebab:** EnsembleData tidak bisa diakses atau token invalid.
-
-**Solusi:**
-1. Cek koneksi internet server
-2. Verifikasi token masih aktif di dashboard EnsembleData
-3. Rotasi ke token lain
+Token habis quota hari ini. Solusi:
+1. Jalankan `cek_token.sh` untuk cari token yang masih aktif
+2. Ganti `ENSEMBLEDATA_API_TOKEN` di `.env` ke token aktif
+3. Atau tunggu reset besok jam 00:00 UTC (~07:00 WIB)
 
 ---
 
-### Error: `Akun TikTok/Instagram tidak ditemukan` (404)
+### ❌ Instagram selalu gagal / 404
 
-**Penyebab:** Username salah, akun privat, atau akun sudah dihapus.
-
-**Solusi:**
-- Cek ulang username/URL
-- Akun privat tidak bisa di-scrape via EnsembleData
-- Coba tanpa `@` di depan
+Pastikan fix bug sudah diterapkan:
+```bash
+grep "ENSEMBLE_BASE_URL" artifacts/api-server/src/lib/instagram.ts
+# Harus menampilkan: https://ensembledata.com/apis/instagram
+# Bukan: https://ensembledata.com/apis/ig
+```
 
 ---
 
-### Error: `DATABASE_URL is not set` / Koneksi database gagal
+### ❌ "Akun tidak ditemukan" (404) padahal akun ada
 
-**Penyebab:** PostgreSQL belum running atau DATABASE_URL salah.
+Kemungkinan penyebab:
+- Akun **privat** — EnsembleData tidak bisa akses akun privat
+- Username salah ketik — coba tanpa @, atau salin dari URL profil
+- Akun terlalu baru — belum terindeks di EnsembleData
 
-**Solusi:**
+---
+
+### ❌ Koneksi database gagal
+
 ```bash
 # Pastikan PostgreSQL running
 pg_isready -h localhost -p 5432
 
-# Cek DATABASE_URL
+# Cek DATABASE_URL di .env
 cat .env | grep DATABASE_URL
 
 # Jalankan ulang schema push
@@ -761,55 +765,53 @@ pnpm --filter @workspace/db run push
 
 ---
 
-### Rate Limit (HTTP 429)
-
-**Penyebab:** Token habis quota request.
-
-**Solusi:**
-- Tunggu beberapa menit sebelum retry
-- Rotasi ke token lain (lihat bagian [Rotasi Token](#-rotasi-token))
-- Kurangi `SCRAPE_DEPTH` untuk menghemat quota (1 analisis = 1 call profil + depth calls untuk posts)
-
----
-
-### Typecheck Error setelah edit kode
+### ❌ TypeScript error setelah edit kode
 
 ```bash
-# Jalankan typecheck lengkap
+# Typecheck seluruh project
 pnpm run typecheck
 
-# Atau hanya untuk package tertentu
+# Hanya API server
 pnpm --filter @workspace/api-server run typecheck
 ```
 
 ---
 
-## 🚀 Quick Start (Ringkasan)
+## 🚀 Quick Start (TikTok)
 
 ```bash
-# 1. Clone salah satu repo
-git clone https://github.com/TlTANPRO/TIKTOKSCRAP.git
-cd TIKTOKSCRAP
-
-# 2. Install dependencies
+git clone https://github.com/TlTANPRO/TIKTOKSCRAP.git && cd TIKTOKSCRAP
 pnpm install
-
-# 3. Buat .env
-echo 'DATABASE_URL=postgresql://user:pass@localhost:5432/tiktokscrap' > .env
-echo 'ENSEMBLEDATA_API_TOKEN=zuggud9kOyHnkIHL' >> .env
-
-# 4. Push schema database
+echo 'DATABASE_URL=postgresql://user:pass@localhost:5432/tiktokdb' > .env
+echo 'ENSEMBLEDATA_API_TOKEN=nfj8aPTaIUMPF34z' >> .env
 pnpm --filter @workspace/db run push
-
-# 5. Jalankan server
-pnpm --filter @workspace/api-server run dev
-
-# 6. Scrape akun TikTok pertama
+pnpm --filter @workspace/api-server run dev &
+sleep 3
 curl -X POST http://localhost:5000/api/tiktok/analyses \
   -H "Content-Type: application/json" \
-  -d '{"input": "@namaakuntiktok"}'
+  -d '{"input": "charlidamelio"}'
+```
+
+## 🚀 Quick Start (Instagram)
+
+```bash
+git clone https://github.com/TlTANPRO/INSTAGRAMSCRAP.git && cd INSTAGRAMSCRAP
+pnpm install
+
+# Fix bug base URL dulu!
+sed -i 's|ensembledata.com/apis/ig|ensembledata.com/apis/instagram|g' \
+  artifacts/api-server/src/lib/instagram.ts
+
+echo 'DATABASE_URL=postgresql://user:pass@localhost:5432/instagramdb' > .env
+echo 'ENSEMBLEDATA_API_TOKEN=nfj8aPTaIUMPF34z' >> .env
+pnpm --filter @workspace/db run push
+pnpm --filter @workspace/api-server run dev &
+sleep 3
+curl -X POST http://localhost:5000/api/instagram/analyses \
+  -H "Content-Type: application/json" \
+  -d '{"input": "nike"}'
 ```
 
 ---
 
-*Panduan ini dibuat untuk tim internal TITANPRO. Diperbarui: Juli 2025.*
+*Panduan ini dibuat berdasarkan pengujian nyata terhadap EnsembleData API — 13 Juli 2026. Tim TITANPRO.*

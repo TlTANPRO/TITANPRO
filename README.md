@@ -104,7 +104,7 @@ Lihat bagian [Setup INSTAGRAMSCRAP](#-setup-instagramscrap--bug-fix) untuk cara 
 
 ## 🔑 Token EnsembleData & Status
 
-Tim TITANPRO memiliki **15 token**. Quota reset setiap hari (jam 00:00 UTC).
+Tim TITANPRO memiliki **26 token**. Quota reset setiap hari (jam 00:00 UTC).
 
 | No | Token | Status (13 Jul 2026) |
 |----|-------|----------------------|
@@ -123,6 +123,17 @@ Tim TITANPRO memiliki **15 token**. Quota reset setiap hari (jam 00:00 UTC).
 | 13 | `c0Yi9f4flGoCLIvn` | 🔴 Habis hari ini |
 | 14 | `xhazovP1LRUjPTPr` | 🔴 Habis hari ini |
 | 15 | `KCMBLCVnYUmh1mik` | 🔴 Habis hari ini |
+| 16 | `F79tRykPWKcq0qQL` | ✅ **Aktif** |
+| 17 | `ttl8ycpEOmZYpbOx` | 🔴 Habis hari ini |
+| 18 | `i0eSnpdHBtmGpTu3` | ✅ **Aktif** |
+| 19 | `62ltym8yt6kB3B4b` | ✅ **Aktif** |
+| 20 | `QVtH5e8OFtELlt9I` | ✅ **Aktif** |
+| 21 | `8sncVdXDcGSVFwkI` | ✅ **Aktif** |
+| 22 | `9x92SNN7bQRmEnvI` | ✅ **Aktif** |
+| 23 | `L5g8kn8nSCAy9vhY` | ✅ **Aktif** |
+| 24 | `c9AF4bHCRGcZUvBe` | ✅ **Aktif** |
+| 25 | `TvFjXULl4NI2x6oq` | ✅ **Aktif** |
+| 26 | `9rO01ynufkgdj4oy` | ✅ **Aktif** |
 
 > Token yang habis hari ini **otomatis reset besok**. Gunakan token aktif yang tersisa atau tunggu reset.
 
@@ -616,6 +627,18 @@ TOKENS=(
   "c0Yi9f4flGoCLIvn"
   "xhazovP1LRUjPTPr"
   "KCMBLCVnYUmh1mik"
+  "F79tRykPWKcq0qQL"
+  "ttl8ycpEOmZYpbOx"
+  "i0eSnpdHBtmGpTu3"
+  "62ltym8yt6kB3B4b"
+  "QVtH5e8OFtELlt9I"
+  "8sncVdXDcGSVFwkI"
+  "9x92SNN7bQRmEnvI"
+  "L5g8kn8nSCAy9vhY"
+  "c9AF4bHCRGcZUvBe"
+  "TvFjXULl4NI2x6oq"
+  "9rO01ynufkgdj4oy"
+  "KCMBLCVnYUmh1mik"
 )
 
 echo "=== Cek Token TikTok ($(date)) ==="
@@ -658,6 +681,10 @@ const ENSEMBLE_TOKENS = [
   "xrKs7aJt6PyFmMOm", "bjO5IrICDJ4Xtb0m", "47VAv84ZMiGA4rkF",
   "qAcU7jq8pbfdOSCW", "LH8wW7LyNJnDjDIa", "DoPVCNC5gKcRdZfc",
   "c0Yi9f4flGoCLIvn", "xhazovP1LRUjPTPr", "KCMBLCVnYUmh1mik",
+  "F79tRykPWKcq0qQL", "ttl8ycpEOmZYpbOx", "i0eSnpdHBtmGpTu3",
+  "62ltym8yt6kB3B4b", "QVtH5e8OFtELlt9I", "8sncVdXDcGSVFwkI",
+  "9x92SNN7bQRmEnvI", "L5g8kn8nSCAy9vhY", "c9AF4bHCRGcZUvBe",
+  "TvFjXULl4NI2x6oq", "9rO01ynufkgdj4oy",
 ];
 
 let _tokenIdx = 0;
@@ -773,43 +800,6 @@ pnpm run typecheck
 
 # Hanya API server
 pnpm --filter @workspace/api-server run typecheck
-```
-
----
-
-## 🚀 Quick Start (TikTok)
-
-```bash
-git clone https://github.com/TlTANPRO/TIKTOKSCRAP.git && cd TIKTOKSCRAP
-pnpm install
-echo 'DATABASE_URL=postgresql://user:pass@localhost:5432/tiktokdb' > .env
-echo 'ENSEMBLEDATA_API_TOKEN=nfj8aPTaIUMPF34z' >> .env
-pnpm --filter @workspace/db run push
-pnpm --filter @workspace/api-server run dev &
-sleep 3
-curl -X POST http://localhost:5000/api/tiktok/analyses \
-  -H "Content-Type: application/json" \
-  -d '{"input": "charlidamelio"}'
-```
-
-## 🚀 Quick Start (Instagram)
-
-```bash
-git clone https://github.com/TlTANPRO/INSTAGRAMSCRAP.git && cd INSTAGRAMSCRAP
-pnpm install
-
-# Fix bug base URL dulu!
-sed -i 's|ensembledata.com/apis/ig|ensembledata.com/apis/instagram|g' \
-  artifacts/api-server/src/lib/instagram.ts
-
-echo 'DATABASE_URL=postgresql://user:pass@localhost:5432/instagramdb' > .env
-echo 'ENSEMBLEDATA_API_TOKEN=nfj8aPTaIUMPF34z' >> .env
-pnpm --filter @workspace/db run push
-pnpm --filter @workspace/api-server run dev &
-sleep 3
-curl -X POST http://localhost:5000/api/instagram/analyses \
-  -H "Content-Type: application/json" \
-  -d '{"input": "nike"}'
 ```
 
 ---

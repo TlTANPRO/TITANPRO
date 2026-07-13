@@ -729,12 +729,13 @@ Token habis quota hari ini. Solusi:
 
 ### ❌ Instagram selalu gagal / 404
 
-Pastikan fix bug sudah diterapkan:
+Verifikasi base URL sudah benar di source code:
 ```bash
 grep "ENSEMBLE_BASE_URL" artifacts/api-server/src/lib/instagram.ts
-# Harus menampilkan: https://ensembledata.com/apis/instagram
-# Bukan: https://ensembledata.com/apis/ig
+# Output yang benar: https://ensembledata.com/apis/instagram
 ```
+
+> Repo terbaru sudah menggunakan URL yang benar. Jika output masih menunjukkan `/apis/ig`, pastikan kamu sudah `git pull` versi terbaru.
 
 ---
 

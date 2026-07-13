@@ -89,16 +89,16 @@ Hasil:
   Posts fetched : sesuai depth
 ```
 
-### ⚠️ Bug Ditemukan di INSTAGRAMSCRAP
+### ✅ Bug di INSTAGRAMSCRAP — Sudah Diperbaiki
 
-Saat pengujian ditemukan **bug kritis** di kode INSTAGRAMSCRAP:
+Saat pengujian ditemukan dan langsung diperbaiki **2 bug kritis** di kode INSTAGRAMSCRAP:
 
-| | Kode (Salah) | Seharusnya |
+| | Sebelum (Salah) | Sesudah (Benar) |
 |---|---|---|
 | Base URL | `https://ensembledata.com/apis/ig` | `https://ensembledata.com/apis/instagram` |
-| Posts param | `username=...` | `user_id=...` (butuh pk dari `/user/info`) |
+| Posts param | `username=...` | `user_id=...` (pk dari `/user/info`) |
 
-Lihat bagian [Setup INSTAGRAMSCRAP](#-setup-instagramscrap--bug-fix) untuk cara fix-nya.
+Perbaikan sudah di-push ke repo. Clone terbaru sudah langsung benar — tidak perlu patch manual.
 
 ---
 
@@ -220,6 +220,9 @@ pnpm install
 ### 2. Buat file `.env`
 
 ```env
+# Wajib: port server (jangan dihilangkan — server crash tanpa ini)
+PORT=5000
+
 # Wajib: PostgreSQL connection string
 DATABASE_URL=postgresql://user:password@localhost:5432/tiktokscrap
 
@@ -260,7 +263,9 @@ curl -X POST http://localhost:5000/api/tiktok/analyses \
 
 ---
 
-## ⚙️ Setup INSTAGRAMSCRAP + Bug Fix
+## ⚙️ Setup INSTAGRAMSCRAP
+
+> ✅ **Bug sudah diperbaiki di repo.** Versi terbaru INSTAGRAMSCRAP sudah menggunakan base URL yang benar (`/apis/instagram`) dan parameter `user_id` yang tepat untuk endpoint posts. Tidak perlu patch manual.
 
 ### 1. Clone & install
 
@@ -270,45 +275,10 @@ cd INSTAGRAMSCRAP
 pnpm install
 ```
 
-### 2. Fix bug base URL (WAJIB)
-
-Buka file `artifacts/api-server/src/lib/instagram.ts`, cari baris ini:
-
-```typescript
-// SALAH — endpoint ini tidak tersedia
-const ENSEMBLE_BASE_URL = "https://ensembledata.com/apis/ig";
-```
-
-Ganti menjadi:
-
-```typescript
-// BENAR — verified dari pengujian nyata
-const ENSEMBLE_BASE_URL = "https://ensembledata.com/apis/instagram";
-```
-
-### 3. Fix bug parameter Instagram posts (WAJIB)
-
-Masih di file `instagram.ts`, fungsi `fetchInstagramPosts` memanggil endpoint dengan `username`.
-Padahal endpoint `/instagram/user/posts` butuh `user_id` (nilai `pk` dari `/user/info`).
-
-Pastikan alur di kode adalah:
-1. Panggil `/instagram/user/info?username=...` → ambil nilai `pk`
-2. Panggil `/instagram/user/posts?user_id={pk}&depth=...` → ambil postingan
-
-Contoh fix di `instagram.ts`:
-
-```typescript
-// Langkah 1: dapatkan user_id dulu
-const infoResult = await ensembleGet("/user/info", { username });
-const pk = (infoResult.data as Record<string, unknown>)?.pk as string;
-
-// Langkah 2: ambil posts pakai user_id
-const postsResult = await ensembleGet("/user/posts", { user_id: pk, depth: String(depth) });
-```
-
-### 4. Buat file `.env`
+### 2. Buat file `.env`
 
 ```env
+PORT=5000
 DATABASE_URL=postgresql://user:password@localhost:5432/instagramscrap
 ENSEMBLEDATA_API_TOKEN=nfj8aPTaIUMPF34z
 SESSION_SECRET=isi_dengan_string_acak_min_32_karakter

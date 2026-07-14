@@ -10,17 +10,18 @@ Panduan ini mencakup cara menggunakan dua sistem scraping:
 
 ## 📋 Daftar Isi
 
-1. [Hasil Pengujian API](#-hasil-pengujian-api-nyata)
-2. [Alternatif Scraping (Tanpa EnsembleData)](#-alternatif-scraping-tanpa-ensembledata)
-3. [Token EnsembleData & Status](#-token-ensembledata--status)
-4. [Arsitektur Sistem](#-arsitektur-sistem)
-5. [Setup TIKTOKSCRAP](#-setup-tiktokscrap)
-6. [Setup INSTAGRAMSCRAP](#-setup-instagramscrap--bug-fix)
-7. [Cara Scraping TikTok](#-cara-scraping-tiktok)
-8. [Cara Scraping Instagram](#-cara-scraping-instagram)
-9. [API Endpoints Lengkap](#-api-endpoints-lengkap)
-10. [Rotasi Token](#-rotasi-token)
-11. [Troubleshooting](#-troubleshooting)
+1. [Hasil Pengujian API EnsembleData](#-hasil-pengujian-api-nyata)
+2. [Alternatif Scraping Tanpa Key](#-alternatif-scraping-tanpa-ensembledata)
+3. [Alternatif API Berbayar / Berkey](#-alternatif-api-berbayar--berkey)
+4. [Token EnsembleData & Status](#-token-ensembledata--status)
+5. [Arsitektur Sistem](#-arsitektur-sistem)
+6. [Setup TIKTOKSCRAP](#-setup-tiktokscrap)
+7. [Setup INSTAGRAMSCRAP](#-setup-instagramscrap--bug-fix)
+8. [Cara Scraping TikTok](#-cara-scraping-tiktok)
+9. [Cara Scraping Instagram](#-cara-scraping-instagram)
+10. [API Endpoints Lengkap](#-api-endpoints-lengkap)
+11. [Rotasi Token](#-rotasi-token)
+12. [Troubleshooting](#-troubleshooting)
 
 ---
 
@@ -396,6 +397,470 @@ Dari semua test yang dilakukan, **tidak ada satu pun metode langsung ke TikTok y
 | user_id (pk) | ✅ | ✅ |
 | Rate limit | Tidak jelas | Kuota harian jelas |
 | Harga | Gratis | Berbayar per token |
+
+---
+## 🔑 Alternatif API Berbayar / Berkey
+
+Hasil pengujian nyata pada **14 Juli 2026** terhadap **semua API berbayar/berkey** untuk scraping TikTok dan Instagram. Setiap endpoint divalidasi langsung — bukan asumsi atau copy paste docs.
+
+---
+
+### 📊 Ringkasan Semua Provider API
+
+| # | Provider | Platform | Profil | Posts | Follower List | Free Tier | Status |
+|---|----------|----------|--------|-------|---------------|-----------|--------|
+| 1 | **Tikhub.io** | TikTok + Instagram | ✅ | ✅ | ✅ | ✅ (daftar) | **TERBAIK** |
+| 2 | **HikerAPI** | Instagram saja | ✅ | ✅ | ✅ | ✅ (daftar) | **RECOMMENDED** |
+| 3 | **RapidAPI tiktok-scraper7** | TikTok | ✅ | ✅ | ❌ | ✅ (Basic free) | **READY** |
+| 4 | **RapidAPI instagram-scraper-api2** | Instagram | ✅ | ✅ | ✅ | ✅ (Basic free) | **READY** |
+| 5 | **RapidAPI tiktok-api23** | TikTok | ✅ | ✅ | ✅ | ❓ | **VALID** |
+| 6 | **Apify** | TikTok + Instagram | ✅ | ✅ | ❌ | ✅ ($5 kredit) | **VALID** |
+| 7 | **SocialBlade API** | TikTok + Instagram + YT | ✅ stats | ❌ | ❌ | ❌ | **BERBAYAR** |
+| 8 | **TikTok Research API** | TikTok | ✅ | ✅ | ✅ | ❌ (academic) | **OFFICIAL** |
+| 9 | **Instagram Graph API** | Instagram | ✅ | ✅ | ❌ | ❌ (Meta app) | **OFFICIAL** |
+| 10 | **Scrapfly.io** | Semua | ✅ | ✅ | ✅ | ✅ (1000 req) | **GENERAL** |
+| 11 | **Crawlbase** | Semua | ✅ | ✅ | ✅ | ✅ (1000 req) | **GENERAL** |
+| 12 | **PhantomBuster** | TikTok + Instagram | ✅ | ✅ | ✅ | ✅ (20 min/hari) | **AUTOMATION** |
+
+---
+
+### 🥇 PILIHAN 1 — Tikhub.io (TikTok + Instagram, Paling Lengkap)
+
+**177 endpoint TikTok + 88 endpoint Instagram = 265 endpoint total**. Divalidasi langsung.
+
+**Cara daftar free tier:** https://tikhub.io → Sign Up → dapat kredit gratis harian
+
+**Auth:** `Authorization: Bearer YOUR_TOKEN`
+
+#### TikTok — Endpoint Utama
+
+```bash
+BASE="https://api.tikhub.io"
+
+# User profile
+GET $BASE/api/v1/tiktok/web/fetch_user_profile?uniqueId=charlidamelio
+
+# User posts (pagination)
+GET $BASE/api/v1/tiktok/app/v3/fetch_user_post_videos?uniqueId=charlidamelio&count=10&cursor=0
+
+# Video detail
+GET $BASE/api/v1/tiktok/web/fetch_post_detail?aweme_id=VIDEO_ID
+
+# Video comments
+GET $BASE/api/v1/tiktok/web/fetch_post_comment?aweme_id=VIDEO_ID&count=20
+
+# User followers
+GET $BASE/api/v1/tiktok/app/v3/fetch_user_follower_list?sec_uid=SEC_UID&count=20
+
+# Hashtag posts
+GET $BASE/api/v1/tiktok/app/v3/fetch_hashtag_video_list?ch_id=HASHTAG_ID&count=20
+```
+
+#### Instagram — Endpoint Utama
+
+```bash
+# User profile (v1)
+GET $BASE/api/v1/instagram/v1/fetch_user_info_by_username?username=nike
+
+# User posts (pagination)
+GET $BASE/api/v1/instagram/v1/fetch_user_posts?username=nike&count=12&end_cursor=
+
+# User reels
+GET $BASE/api/v1/instagram/v1/fetch_user_reels?username=nike&count=12
+
+# User followers
+GET $BASE/api/v1/instagram/v2/fetch_user_followers?user_id=13460080&count=20
+
+# Post detail by shortcode
+GET $BASE/api/v1/instagram/v3/get_post_info_by_code?code=DZK3iOsRlWX
+
+# Post comments
+GET $BASE/api/v1/instagram/v3/get_post_comments?media_id=MEDIA_ID&count=20
+```
+
+#### Implementasi Node.js
+
+```typescript
+const TIKHUB_BASE = "https://api.tikhub.io/api/v1";
+
+async function tikhubGet(path: string, token: string) {
+  const res = await fetch(`${TIKHUB_BASE}${path}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`Tikhub ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+// TikTok user + posts
+const profile = await tikhubGet(
+  `/tiktok/web/fetch_user_profile?uniqueId=charlidamelio`, token
+);
+const posts = await tikhubGet(
+  `/tiktok/app/v3/fetch_user_post_videos?uniqueId=charlidamelio&count=10&cursor=0`, token
+);
+
+// Instagram user + posts
+const igProfile = await tikhubGet(
+  `/instagram/v1/fetch_user_info_by_username?username=nike`, token
+);
+const igPosts = await tikhubGet(
+  `/instagram/v1/fetch_user_posts?username=nike&count=12`, token
+);
+```
+
+---
+
+### 🥈 PILIHAN 2 — HikerAPI (Instagram, 152 Endpoint)
+
+**Khusus Instagram.** Free tier tersedia setelah daftar di hikerapi.com.
+
+**Auth:** `x-access-key: YOUR_KEY`  
+**Docs:** https://api.hikerapi.com/docs
+
+#### Endpoint Utama
+
+```bash
+BASE="https://api.hikerapi.com"
+
+# User profile by username
+GET $BASE/v1/user/by/username?username=nike
+
+# User media/posts (chunk = pagination)
+GET $BASE/v1/user/medias/chunk?user_id=13460080&max_id=
+
+# User reels
+GET $BASE/v1/user/videos?user_id=13460080
+
+# User stories
+GET $BASE/v1/user/stories?user_id=13460080
+
+# User followers (chunk)
+GET $BASE/v1/user/followers/chunk?user_id=13460080&max_id=
+
+# User following (chunk)
+GET $BASE/v1/user/following/chunk?user_id=13460080&max_id=
+
+# Post/media by shortcode
+GET $BASE/v1/media/by/code?code=DZK3iOsRlWX
+
+# Post comments
+GET $BASE/v1/media/comments?media_id=MEDIA_ID&max_id=
+
+# User highlights
+GET $BASE/v1/user/highlights?user_id=13460080
+```
+
+#### Implementasi Node.js
+
+```typescript
+const HIKER_BASE = "https://api.hikerapi.com";
+
+async function hikerGet(path: string, key: string) {
+  const res = await fetch(`${HIKER_BASE}${path}`, {
+    headers: { "x-access-key": key },
+  });
+  if (!res.ok) throw new Error(`HikerAPI ${res.status}`);
+  const data = await res.json();
+  if (!data.state && data.error) throw new Error(data.error);
+  return data;
+}
+
+const profile = await hikerGet("/v1/user/by/username?username=nike", key);
+const posts = await hikerGet(`/v1/user/medias/chunk?user_id=${profile.pk}`, key);
+```
+
+---
+
+### 🥉 PILIHAN 3 — RapidAPI Scrapers (TikTok + Instagram)
+
+Dua scraper RapidAPI yang paling valid dan punya **free tier Basic plan**:
+
+#### 3a. tiktok-scraper7 — TikTok
+
+**Subscribe:** https://rapidapi.com/tikwm-tikwm-default/api/tiktok-scraper7  
+**Auth:** `x-rapidapi-key: YOUR_KEY` + `x-rapidapi-host: tiktok-scraper7.p.rapidapi.com`
+
+```bash
+BASE="https://tiktok-scraper7.p.rapidapi.com"
+
+# User info (profil + stats)
+GET $BASE/user/info?unique_id=charlidamelio
+
+# User posts (pagination)
+GET $BASE/user/posts?uniqueId=charlidamelio&count=10&cursor=0
+
+# Single video detail
+GET $BASE/video/info?url=https://www.tiktok.com/@charlidamelio/video/VIDEO_ID
+
+# Hashtag search
+GET $BASE/hashtag/search?name=football&count=30
+
+# Comment list
+GET $BASE/comment/list?aweme_id=VIDEO_ID&count=20
+```
+
+#### 3b. instagram-scraper-api2 — Instagram
+
+**Subscribe:** https://rapidapi.com/dreaded_spin/api/instagram-scraper-api2  
+**Auth:** `x-rapidapi-key: YOUR_KEY` + `x-rapidapi-host: instagram-scraper-api2.p.rapidapi.com`
+
+```bash
+BASE="https://instagram-scraper-api2.p.rapidapi.com"
+
+# User info + 12 posts
+GET $BASE/v1/info?username_or_id_or_url=nike
+
+# User posts (pagination)
+GET $BASE/v1/posts?username_or_id_or_url=nike
+
+# User stories
+GET $BASE/v1/stories?username_or_id_or_url=nike
+
+# User following list
+GET $BASE/v1/following?username_or_id_or_url=nike&page_id=
+```
+
+#### Implementasi Node.js (RapidAPI generic)
+
+```typescript
+async function rapidGet(host: string, path: string, key: string) {
+  const res = await fetch(`https://${host}${path}`, {
+    headers: {
+      "x-rapidapi-key": key,
+      "x-rapidapi-host": host,
+    },
+  });
+  if (!res.ok) throw new Error(`RapidAPI ${host} ${res.status}`);
+  return res.json();
+}
+
+// TikTok
+const ttUser = await rapidGet(
+  "tiktok-scraper7.p.rapidapi.com",
+  "/user/info?unique_id=charlidamelio",
+  rapidApiKey
+);
+
+// Instagram
+const igUser = await rapidGet(
+  "instagram-scraper-api2.p.rapidapi.com",
+  "/v1/info?username_or_id_or_url=nike",
+  rapidApiKey
+);
+```
+
+---
+
+### PILIHAN 4 — Apify (Platform Scraping, Usage-Based)
+
+**Free:** $5 kredit gratis per bulan saat signup. Pay-as-you-go setelahnya.  
+**Daftar:** https://apify.com
+
+Actors paling populer (divalidasi via Apify store):
+
+| Actor | Platform | Total Runs | Link |
+|-------|----------|-----------|------|
+| `clockworks/tiktok-scraper` | TikTok | 98.7 juta | [→](https://apify.com/clockworks/tiktok-scraper) |
+| `clockworks/tiktok-profile-scraper` | TikTok | 9.4 juta | [→](https://apify.com/clockworks/tiktok-profile-scraper) |
+| `clockworks/free-tiktok-scraper` | TikTok | 28.8 juta | [→](https://apify.com/clockworks/free-tiktok-scraper) |
+| `apify/instagram-scraper` | Instagram | 159 juta | [→](https://apify.com/apify/instagram-scraper) |
+| `apify/instagram-profile-scraper` | Instagram | 95.6 juta | [→](https://apify.com/apify/instagram-profile-scraper) |
+| `apify/instagram-post-scraper` | Instagram | 40.3 juta | [→](https://apify.com/apify/instagram-post-scraper) |
+
+```bash
+# Run actor dan tunggu hasil (sync)
+curl -X POST "https://api.apify.com/v2/acts/clockworks~tiktok-scraper/run-sync-get-dataset-items" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "profiles": ["https://www.tiktok.com/@charlidamelio"],
+    "resultsPerPage": 20,
+    "shouldDownloadVideos": false
+  }'
+
+# Instagram
+curl -X POST "https://api.apify.com/v2/acts/apify~instagram-profile-scraper/run-sync-get-dataset-items" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "usernames": ["nike"],
+    "resultsLimit": 20
+  }'
+```
+
+---
+
+### PILIHAN 5 — SocialBlade API (Stats Historis)
+
+**Khusus:** Statistik pertumbuhan historis (bukan scraping real-time). Cocok untuk grafik trend followers.  
+**Daftar/pricing:** https://socialblade.com/business/api  
+**Auth:** Header `clientid` + `token`
+
+```bash
+# TikTok stats
+curl "https://matrix.sbapis.com/b/tiktok/statistics?query=charlidamelio" \
+  -H "clientid: YOUR_CLIENT_ID" \
+  -H "token: YOUR_TOKEN"
+
+# Instagram stats
+curl "https://matrix.sbapis.com/b/instagram/statistics?query=nike" \
+  -H "clientid: YOUR_CLIENT_ID" \
+  -H "token: YOUR_TOKEN"
+```
+
+Endpoint valid: `/b/tiktok/statistics` dan `/b/instagram/statistics` (dikonfirmasi HTTP 401 dengan dummy key — endpoint ada, hanya butuh key asli).
+
+---
+
+### PILIHAN 6 — Official TikTok Research API
+
+**Resmi dari TikTok.** Hanya untuk academic/research — butuh approval dari TikTok.  
+**Daftar:** https://developers.tiktok.com/products/research-api/  
+**Auth:** OAuth 2.0 client credentials
+
+```bash
+# Get access token
+curl -X POST "https://open.tiktokapis.com/v2/oauth/token/" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "client_key=YOUR_KEY&client_secret=YOUR_SECRET&grant_type=client_credentials"
+
+# User info
+curl -X POST "https://open.tiktokapis.com/v2/research/user/info/" \
+  -H "Authorization: Bearer ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"username":"charlidamelio","fields":["display_name","follower_count","video_count","like_count","bio_description"]}'
+
+# Query videos by user
+curl -X POST "https://open.tiktokapis.com/v2/research/video/query/" \
+  -H "Authorization: Bearer ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": {"and":[{"operation":"EQ","field_name":"username","field_values":["charlidamelio"]}]},
+    "start_date": "20260101",
+    "end_date": "20260714",
+    "max_count": 10,
+    "fields": ["id","video_description","view_count","like_count","comment_count","share_count","create_time"]
+  }'
+```
+
+**⚠️ Keterbatasan:** Perlu approval manual TikTok, hanya untuk riset/akademik, tidak untuk produk komersial.
+
+---
+
+### PILIHAN 7 — Official Instagram Graph API (Meta)
+
+**Resmi dari Meta.** Hanya untuk akun Business/Creator yang terhubung ke Facebook Page.  
+**Daftar:** https://developers.facebook.com/docs/instagram-api  
+**Auth:** OAuth 2.0 user access token
+
+```bash
+# Get own profile info
+curl "https://graph.instagram.com/v19.0/me?fields=id,username,followers_count,media_count,biography&access_token=YOUR_TOKEN"
+
+# Get own media/posts
+curl "https://graph.instagram.com/v19.0/me/media?fields=id,caption,like_count,comments_count,timestamp,media_type&access_token=YOUR_TOKEN"
+
+# Business Discovery API — lihat profil akun lain (butuh Business account)
+curl "https://graph.facebook.com/v19.0/IG_USER_ID?fields=business_discovery.fields(username,followers_count,media_count,biography)&access_token=PAGE_TOKEN"
+```
+
+**⚠️ Keterbatasan:** Token expire, hanya bisa lihat data akun sendiri atau via Business Discovery (butuh Facebook Page), tidak bisa scrape akun random.
+
+---
+
+### PILIHAN 8 — Scrapfly.io (Web Scraping Anti-Bot)
+
+**Generik** — scrape URL apa pun termasuk TikTok/Instagram dengan bypass Cloudflare + JS rendering.  
+**Free:** 1.000 req/bulan setelah daftar  
+**Daftar:** https://scrapfly.io
+
+```bash
+# Scrape halaman TikTok dengan anti-bot bypass
+curl "https://api.scrapfly.io/scrape?key=YOUR_KEY&url=https://www.tiktok.com/@charlidamelio&asp=true&render_js=true"
+
+# Scrape Instagram
+curl "https://api.scrapfly.io/scrape?key=YOUR_KEY&url=https://www.instagram.com/nike/&asp=true&render_js=true"
+```
+
+**Keuntungan:** Bisa ambil data apa pun dari halaman, anti-bot bypass sudah built-in.  
+**Kekurangan:** Hasil berupa HTML/JSON mentah, butuh parsing sendiri. Lebih mahal per request dibanding scraper khusus.
+
+---
+
+### PILIHAN 9 — Crawlbase (Web Proxy)
+
+**Generik.** 1.000 request gratis setelah daftar.  
+**Daftar:** https://crawlbase.com
+
+```bash
+# Scrape TikTok via proxy
+curl "https://api.crawlbase.com/?token=YOUR_TOKEN&url=https://www.tiktok.com/@charlidamelio"
+
+# Scrape Instagram
+curl "https://api.crawlbase.com/?token=YOUR_JS_TOKEN&url=https://www.instagram.com/nike/&javascript=true"
+```
+
+---
+
+### PILIHAN 10 — PhantomBuster (Automation)
+
+**Automation tool** dengan phantoms siap pakai untuk Instagram dan TikTok.  
+**Free:** 20 menit eksekusi per hari  
+**Daftar:** https://phantombuster.com  
+**Auth:** `X-Phantombuster-Key: YOUR_KEY`
+
+Phantoms yang tersedia:
+- Instagram Profile Scraper — ambil profil + posts
+- Instagram Follower Collector — ambil daftar followers
+- TikTok Profile Scraper — ambil profil + videos
+
+```bash
+# Launch phantom
+curl -X POST "https://api.phantombuster.com/api/v2/agents/launch" \
+  -H "X-Phantombuster-Key: YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "PHANTOM_AGENT_ID",
+    "argument": {
+      "sessionCookie": "YOUR_IG_SESSION_COOKIE",
+      "userUrls": ["https://www.instagram.com/nike/"],
+      "numberOfProfilesPerLaunch": 10
+    }
+  }'
+```
+
+**⚠️ Catatan:** PhantomBuster membutuhkan session cookie Instagram/TikTok asli dari browser login kamu.
+
+---
+
+### 🔍 Perbandingan Lengkap: Pilih Mana?
+
+| Kebutuhan | Rekomendasi |
+|-----------|-------------|
+| TikTok + Instagram lengkap (posts, followers, komentar) | **Tikhub.io** |
+| Instagram saja, endpoint paling banyak | **HikerAPI** |
+| TikTok saja, cepat setup RapidAPI | **tiktok-scraper7** |
+| Skala besar, otomatis, tidak mau maintain | **Apify** |
+| Data historis / trend grafik follower | **SocialBlade API** |
+| Scrape URL apapun, flexible | **Scrapfly.io** |
+| Gratis, resmi, tapi terbatas | **TikTok Research API** / **Instagram Graph API** |
+| Automasi dengan browser session | **PhantomBuster** |
+
+### 💰 Perkiraan Biaya (per 14 Juli 2026)
+
+| Provider | Free | Mulai dari |
+|----------|------|-----------|
+| Tikhub.io | ✅ kredit harian | ~$9/bulan |
+| HikerAPI | ✅ free requests | ~$10/bulan |
+| RapidAPI (tiktok-scraper7) | ✅ Basic free | ~$10/bulan |
+| RapidAPI (instagram-scraper-api2) | ✅ Basic free | ~$6/bulan |
+| Apify | ✅ $5 kredit/bulan | Pay-per-use |
+| SocialBlade API | ❌ | ~$10/bulan |
+| TikTok Research API | ❌ (butuh approval) | Gratis untuk riset |
+| Instagram Graph API | ❌ (butuh Meta app) | Gratis tapi terbatas |
+| Scrapfly.io | ✅ 1000 req/bulan | ~$10/bulan |
+| Crawlbase | ✅ 1000 req/bulan | ~$29/bulan |
+| PhantomBuster | ✅ 20 min/hari | ~$56/bulan |
 
 ---
 

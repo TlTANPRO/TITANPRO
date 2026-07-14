@@ -11,15 +11,16 @@ Panduan ini mencakup cara menggunakan dua sistem scraping:
 ## 📋 Daftar Isi
 
 1. [Hasil Pengujian API](#-hasil-pengujian-api-nyata)
-2. [Token EnsembleData & Status](#-token-ensembledata--status)
-3. [Arsitektur Sistem](#-arsitektur-sistem)
-4. [Setup TIKTOKSCRAP](#-setup-tiktokscrap)
-5. [Setup INSTAGRAMSCRAP](#-setup-instagramscrap--bug-fix)
-6. [Cara Scraping TikTok](#-cara-scraping-tiktok)
-7. [Cara Scraping Instagram](#-cara-scraping-instagram)
-8. [API Endpoints Lengkap](#-api-endpoints-lengkap)
-9. [Rotasi Token](#-rotasi-token)
-10. [Troubleshooting](#-troubleshooting)
+2. [Alternatif Scraping (Tanpa EnsembleData)](#-alternatif-scraping-tanpa-ensembledata)
+3. [Token EnsembleData & Status](#-token-ensembledata--status)
+4. [Arsitektur Sistem](#-arsitektur-sistem)
+5. [Setup TIKTOKSCRAP](#-setup-tiktokscrap)
+6. [Setup INSTAGRAMSCRAP](#-setup-instagramscrap--bug-fix)
+7. [Cara Scraping TikTok](#-cara-scraping-tiktok)
+8. [Cara Scraping Instagram](#-cara-scraping-instagram)
+9. [API Endpoints Lengkap](#-api-endpoints-lengkap)
+10. [Rotasi Token](#-rotasi-token)
+11. [Troubleshooting](#-troubleshooting)
 
 ---
 
@@ -99,6 +100,302 @@ Saat pengujian ditemukan dan langsung diperbaiki **2 bug kritis** di kode INSTAG
 | Posts param | `username=...` | `user_id=...` (pk dari `/user/info`) |
 
 Perbaikan sudah di-push ke repo. Clone terbaru sudah langsung benar — tidak perlu patch manual.
+
+---
+## 🔬 Alternatif Scraping Tanpa EnsembleData
+
+Hasil pengujian nyata pada **14 Juli 2026** terhadap **semua opsi scraping** yang bisa digunakan selain EnsembleData. Setiap metode diuji langsung — bukan asumsi.
+
+---
+
+### 📊 Ringkasan Hasil Test Semua Opsi
+
+| # | Metode | Platform | Profil | Posts/Video | Key? | Status |
+|---|--------|----------|--------|-------------|------|--------|
+| 1 | **tikwm.com API** `?hd=1` | TikTok | ✅ | ❌ posts, ✅ single video | Tidak | **BERHASIL** |
+| 2 | **i.instagram.com** `web_profile_info` | Instagram | ✅ | ✅ 12 terbaru | Tidak | **BERHASIL** |
+| 3 | **yt-dlp** (post tunggal) | Instagram | ❌ | ✅ per-post | Tidak | **BERHASIL (terbatas)** |
+| 4 | TikTok web API `/api/user/detail/` | TikTok | ❌ | ❌ | Tidak | BLOCKED (response kosong) |
+| 5 | TikTok mobile API (Argus) | TikTok | ❌ | ❌ | Tidak | BLOCKED |
+| 6 | tikwm.com `/api/user/posts` | TikTok | - | ❌ | Tidak | BLOCKED (Cloudflare) |
+| 7 | TikTok oEmbed | TikTok | ❌ | ❌ | Tidak | BLOCKED |
+| 8 | yt-dlp user page | TikTok/IG | ❌ | ❌ | Tidak | BLOCKED (429/error) |
+| 9 | Instagram `?__a=1` | Instagram | ❌ | ❌ | Tidak | BLOCKED |
+| 10 | Instagram GraphQL | Instagram | ❌ | ❌ | Tidak | BLOCKED |
+| 11 | Instagram feed API | Instagram | ❌ | ❌ | Tidak | BLOCKED (butuh auth) |
+| 12 | SocialBlade | Keduanya | ❌ | ❌ | Tidak | BLOCKED (Cloudflare) |
+| 13 | Instaloader | Instagram | ❌ | ❌ | Tidak | Python tidak tersedia di env |
+| 14 | HikerAPI | Keduanya | ❌ | ❌ | **Ya** | Butuh API key |
+| 15 | Tikhub.io | Keduanya | ❌ | ❌ | **Ya** | Butuh API key |
+| 16 | ScraperAPI | Keduanya | ❌ | ❌ | **Ya** | Butuh API key |
+| 17 | Apify | Keduanya | ❌ | ❌ | **Ya** | Butuh API key |
+| 18 | Bright Data | Keduanya | ❌ | ❌ | **Ya** | Butuh API key |
+
+---
+
+### ✅ OPSI 1 — tikwm.com (TikTok Profil + Video Detail)
+
+**Berhasil ditest langsung. Gratis, tanpa API key.**
+
+#### Profil akun TikTok
+
+```bash
+curl "https://www.tikwm.com/api/user/info?unique_id=charlidamelio&hd=1"
+```
+
+Response nyata (ditest 14 Jul 2026):
+```json
+{
+  "user": {
+    "id": "5831967",
+    "uniqueId": "charlidamelio",
+    "nickname": "charli d'amelio",
+    "verified": true,
+    "secUid": "MS4wLjABAAAA-VASjiXTh7wDDyXvjk10VFhMWUAoxr8bgfO1kAL1-9s"
+  },
+  "stats": {
+    "followerCount": 159200026,
+    "followingCount": 1400,
+    "videoCount": 3151,
+    "heartCount": 12265213906
+  }
+}
+```
+
+Multi-account test:
+- `charlidamelio` → 159.200.026 followers, 3.151 videos ✅
+- `khaby.lame` → 162.344.007 followers, 1.343 videos ✅
+- `mrbeast` → tidak terindeks di tikwm ❌
+
+#### Video detail tunggal
+
+```bash
+curl "https://www.tikwm.com/api/?url=https://www.tiktok.com/@charlidamelio/video/7661492762902023437&hd=1"
+```
+
+Response nyata:
+```json
+{
+  "id": "7661492762902023437",
+  "play_count": 2544040,
+  "digg_count": 239737,
+  "comment_count": 1773,
+  "share_count": 2210,
+  "collect_count": 8612,
+  "duration": 20,
+  "create_time": 1783830315,
+  "region": "US",
+  "author": { "uniqueId": "charlidamelio" }
+}
+```
+
+#### Video search (bukan per-user, tapi bisa filter)
+
+```bash
+curl "https://www.tikwm.com/api/feed/search?keywords=charlidamelio&count=5&cursor=0"
+```
+
+**⚠️ Keterbatasan tikwm.com:**
+- Endpoint `/api/user/posts` (daftar video per user) → **di-block Cloudflare**
+- Beberapa akun besar tidak terindeks (contoh: mrbeast)
+- Tidak ada pagination video per user
+- Rate limit tidak diketahui secara pasti
+
+#### Implementasi di Node.js
+
+```typescript
+const BASE = "https://www.tikwm.com/api";
+
+async function getTikTokProfile(username: string) {
+  const res = await fetch(`${BASE}/user/info?unique_id=${username}&hd=1`);
+  const json = await res.json();
+  if (json.code !== 0) throw new Error(json.msg);
+  return { user: json.data.user, stats: json.data.stats };
+}
+
+async function getTikTokVideoDetail(videoUrl: string) {
+  const res = await fetch(`${BASE}/?url=${encodeURIComponent(videoUrl)}&hd=1`);
+  const json = await res.json();
+  if (json.code !== 0) throw new Error(json.msg);
+  return json.data;
+}
+```
+
+---
+
+### ✅ OPSI 2 — i.instagram.com (Instagram Profil + 12 Post Terbaru)
+
+**Berhasil ditest langsung. Gratis, tanpa API key. Butuh User-Agent tertentu.**
+
+```bash
+curl "https://i.instagram.com/api/v1/users/web_profile_info/?username=nike" \
+  -H "User-Agent: Instagram 123.0.0.21.114 Android"
+```
+
+Response nyata (ditest 14 Jul 2026):
+```json
+{
+  "data": {
+    "user": {
+      "id": "13460080",
+      "username": "nike",
+      "full_name": "Nike",
+      "biography": "Just Do It.",
+      "is_verified": true,
+      "is_private": false,
+      "edge_followed_by": { "count": 291792459 },
+      "edge_follow": { "count": 264 },
+      "edge_owner_to_timeline_media": {
+        "count": 1663,
+        "page_info": { "has_next_page": true, "end_cursor": "QVFDTjNl..." },
+        "edges": [
+          {
+            "node": {
+              "id": "3912183471120209303",
+              "shortcode": "DZK3iOsRlWX",
+              "__typename": "GraphVideo",
+              "taken_at_timestamp": 1780588767,
+              "edge_liked_by": { "count": 2724728 },
+              "edge_media_to_comment": { "count": 58878 },
+              "edge_media_to_caption": { "edges": [{ "node": { "text": "It was all going to plan..." }}]}
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
+Multi-account test:
+- `nike` → 291.792.459 followers, 1.663 posts, 12 posts fetched ✅
+- `cristiano` → 676.417.576 followers, 4.108 posts, 12 posts fetched ✅
+- `natgeo` → 269.044.683 followers, 12 posts fetched ✅
+
+**⚠️ Keterbatasan:**
+- Hanya 12 post terbaru per request (ada `end_cursor` tapi GraphQL pagination di-block)
+- Tidak ada endpoint post pagination yang bisa diakses tanpa auth
+- Rate limit tidak diketahui — jangan spam
+
+#### Implementasi di Node.js
+
+```typescript
+const IG_BASE = "https://i.instagram.com/api/v1";
+const IG_UA = "Instagram 123.0.0.21.114 Android";
+
+async function getInstagramProfile(username: string) {
+  const res = await fetch(
+    `${IG_BASE}/users/web_profile_info/?username=${username}`,
+    { headers: { "User-Agent": IG_UA } }
+  );
+  const json = await res.json();
+  const user = json.data?.user;
+  if (!user) throw new Error("User not found");
+
+  const posts = (user.edge_owner_to_timeline_media?.edges || []).map(
+    (e: any) => ({
+      id: e.node.id,
+      shortcode: e.node.shortcode,
+      type: e.node.__typename,
+      likes: e.node.edge_liked_by?.count,
+      comments: e.node.edge_media_to_comment?.count,
+      timestamp: e.node.taken_at_timestamp,
+      caption: e.node.edge_media_to_caption?.edges?.[0]?.node?.text || "",
+    })
+  );
+
+  return {
+    pk: user.id,
+    username: user.username,
+    fullName: user.full_name,
+    bio: user.biography,
+    verified: user.is_verified,
+    isPrivate: user.is_private,
+    followers: user.edge_followed_by?.count,
+    following: user.edge_follow?.count,
+    postCount: user.edge_owner_to_timeline_media?.count,
+    posts,          // 12 post terbaru
+    hasMore: user.edge_owner_to_timeline_media?.page_info?.has_next_page,
+  };
+}
+```
+
+---
+
+### ✅ OPSI 3 — yt-dlp (Instagram Post Tunggal)
+
+**Berhasil untuk individual post. Gratis. Tidak bekerja untuk user page.**
+
+```bash
+# Install
+curl -sL https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux -o yt-dlp
+chmod +x yt-dlp
+
+# Scrape post tunggal
+./yt-dlp --dump-json --no-download "https://www.instagram.com/p/DZK3iOsRlWX/"
+```
+
+Response nyata:
+```json
+{
+  "id": "DZK3iOsRlWX",
+  "uploader": "Nike",
+  "like_count": 2724764,
+  "comment_count": 58879,
+  "upload_date": "20260604",
+  "description": "It was all going to plan until instincts took over"
+}
+```
+
+**⚠️ Keterbatasan:**
+- Hanya untuk post individual (shortcode URL), bukan daftar user
+- User page (`/nike/`) → 429 Too Many Requests
+- TikTok via yt-dlp → "Unable to extract universal data" (tidak bekerja)
+
+---
+
+### ❌ Kenapa TikTok Sangat Sulit Di-scrape Langsung
+
+Dari semua test yang dilakukan, **tidak ada satu pun metode langsung ke TikTok yang berhasil** mengambil data per-video (selain melalui tikwm.com sebagai proxy):
+
+| Metode | Hasil |
+|--------|-------|
+| `tiktok.com/api/user/detail/` | HTTP 200 tapi body kosong |
+| Mobile API (`api16-normal-c-useast1a.tiktokv.com`) | Blocked oleh Argus TLB |
+| `api2-19-h2.musical.ly` | HTTP 200 tapi body kosong |
+| TikTok embed page | HTML tapi tanpa data JSON |
+| TikTok oEmbed | 404 |
+| yt-dlp | "Unable to extract universal data" |
+| Playwright/browser | Butuh residential proxy + bypass Argus |
+
+**Kesimpulan:** TikTok menggunakan sistem anti-bot "Argus" yang memblokir datacenter IP. Satu-satunya opsi tanpa API berbayar adalah via **tikwm.com** (profil + video detail) atau **EnsembleData** (profil + video list penuh).
+
+---
+
+### Perbandingan: tikwm.com vs EnsembleData (TikTok)
+
+| Kemampuan | tikwm.com | EnsembleData |
+|-----------|-----------|--------------|
+| Profil akun | ✅ | ✅ |
+| Stats (followers, videos) | ✅ | ✅ |
+| Daftar video per user | ❌ (Cloudflare) | ✅ |
+| Detail video tunggal | ✅ | ✅ |
+| Video search | ✅ | ✅ |
+| Rate limit | Tidak jelas | Kuota harian jelas |
+| Harga | Gratis | Berbayar per token |
+| Keandalan | Tidak stabil (Cloudflare) | Stabil |
+
+### Perbandingan: i.instagram.com vs EnsembleData (Instagram)
+
+| Kemampuan | i.instagram.com | EnsembleData |
+|-----------|-----------------|--------------|
+| Profil akun | ✅ | ✅ |
+| Stats (followers, posts) | ✅ | ✅ |
+| Post terbaru | ✅ 12 post | ✅ pagination penuh |
+| Pagination post | ❌ (butuh auth) | ✅ |
+| user_id (pk) | ✅ | ✅ |
+| Rate limit | Tidak jelas | Kuota harian jelas |
+| Harga | Gratis | Berbayar per token |
 
 ---
 
